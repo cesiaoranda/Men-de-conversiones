@@ -1,84 +1,76 @@
-print ("hola mundo")
 import tkinter as tk
-from tkinter import messagebox
-from tkinter import ttk
-from PIL import Image, ImageTk
-import requests
-from io import BytesIO
+from tkinter import ttk, messagebox
 
-USUARIO_VALIDO = "admin"
-CONTRASENA_VALIDA = "1234"
+def convertir(valor, tipo):
+    conversiones = {
+        "Metros a Kilómetros": (valor / 1000, "km"),
+        "Pulgadas a Metros": (valor * 0.0254, "m"),
+        "Kilogramos a Gramos": (valor * 1000, "g"),
+        "Libras a Kilogramos": (valor * 0.453592, "kg"),
+        "Segundos a Minutos": (valor / 60, "min"),
+        "Horas a Días": (valor / 24, "días"),
+        
+    }
+    resultado, unidad = conversiones.get(tipo, (None, ""))
+    return resultado, unidad
 
-def mostrar_login():
-    ventana_login = tk.Tk()
-    ventana_login.title("Login")
-    ventana_login.geometry("350x250")
-    ventana_login.configure(bg="turquoise")
+def validar_entrada(valor):
+    try:
+        return float(valor)
+    except ValueError:
+        messagebox.showerror("Error", "Por favor, ingresa un número válido.")
+        return None
 
-    titulo = tk.Label(ventana_login, text="Bienvenido", bg="#f0f8ff", fg="black",
-                      font=("Helvetica", 16, "bold"))
-    titulo.pack(pady=10)
-
-    tk.Label(ventana_login, text="Usuario:", bg="#f0f8ff", fg="#000000",
-             font=("Helvetica", 10)).pack(pady=5)
-    entrada_usuario = tk.Entry(ventana_login, font=("Helvetica", 10))
-    entrada_usuario.pack()
-
-    tk.Label(ventana_login, text="Contraseña:", bg="#f0f8ff", fg="#000000",
-             font=("Helvetica", 10)).pack(pady=5)
-    entrada_contra = tk.Entry(ventana_login, show="*", font=("Helvetica", 10))
-    entrada_contra.pack()
-
-    def verificar():
-        if entrada_usuario.get() == USUARIO_VALIDO and entrada_contra.get() == CONTRASENA_VALIDA:
-            ventana_login.destroy()
-            mostrar_selector()
-        else:
-            messagebox.showerror("Error", "Usuario o contraseña incorrectos")
-
-    tk.Button(ventana_login, text="Ingresar", command=verificar,
-              bg="#5cb85c", fg="white", font=("Helvetica", 10, "bold"),
-              relief="raised", padx=10, pady=5).pack(pady=15)
-
-    ventana_login.mainloop()
-
-def mostrar_selector():
-    ventana = tk.Tk()
-    ventana.title("Selector de imágenes")
-    ventana.geometry("500x400")
-    ventana.configure(bg="violet")
-
-    tk.Label(ventana, text="Selecciona una imagen:", bg="violet", font=("Arial", 12)).pack(pady=10)
+def abrir_ventana_conversion(categoria):
+    ventana = tk.Toplevel()
+    ventana.title(f"Conversión de {categoria}")
+    ventana.geometry("350x300")
+    ventana.configure(bg="#f9f9f9")
 
     opciones = {
-        "Longitud" 
-        "Masa" 
-        "Tiempo"
+        "Longitud": ["Metros a Kilómetros", "Pulgadas a Metros"],
+        "Masa": ["Kilogramos a Gramos", "Libras a Kilogramos"],
+        "Tiempo": ["Segundos a Minutos", "Horas a Días"]
     }
+        
 
-    combo = ttk.Combobox(ventana, values=list(opciones.keys()))
-    combo.pack(pady=10)
+    tk.Label(ventana, text="Seleccione tipo de conversión:", bg="#f9f9f9", font=("Arial", 10, "bold")).pack(pady=5)
+    seleccion = ttk.Combobox(ventana, values=opciones[categoria], state="readonly")
+    seleccion.current(0)
+    seleccion.pack(pady=5)
 
-    label_imagen = tk.Label(ventana, bg="violet")
-    label_imagen.pack()
+    tk.Label(ventana, text="Ingrese valor:", bg="#f9f9f9").pack(pady=5)
+    entrada = tk.Entry(ventana)
+    entrada.pack(pady=5)
 
-    def mostrar_imagen(event):
-        seleccion = combo.get()
-        ruta = opciones.get(seleccion)
-        if ruta:
-            try:
-                respuesta = requests.get(ruta)
-                respuesta.raise_for_status()  # Lanza un error si la respuesta es un error
-                imagen = Image.open(BytesIO(respuesta.content))
-                imagen = imagen.resize((300, 200))
-                img = ImageTk.PhotoImage(imagen)
-                label_imagen.config(image=img)
-                label_imagen.image = img
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo cargar la imagen:\n{e}")
+    resultado_label = tk.Label(ventana, text="", bg="#f9f9f9", font=("Arial", 10))
+    resultado_label.pack(pady=10)
 
-    combo.bind("<<ComboboxSelected>>", mostrar_imagen)
+    def ejecutar_conversion():
+        valor = validar_entrada(entrada.get())
+        if valor is not None:
+            tipo = seleccion.get()
+            resultado, unidad = convertir(valor, tipo)
+            if resultado is not None:
+                resultado_label.config(text=f"Resultado: {resultado} {unidad}")
+            else:
+                resultado_label.config(text="Conversión no válida")
 
-    ventana.mainloop()
+    tk.Button(ventana, text="Convertir", command=ejecutar_conversion).pack(pady=10)
 
-mostrar_login()
+
+ventana_principal = tk.Tk()
+ventana_principal.title("Conversores de Unidades")
+ventana_principal.geometry("300x300")
+ventana_principal.configure(bg="pink")
+
+tk.Label(ventana_principal, text="Escoja su opción", bg="#aef7a2", font=("Arial", 12, "bold")).pack(pady=15)
+
+def crear_boton(texto, categoria):
+    return tk.Button( ventana_principal,  text=texto,  bg="red",  fg="white", font=("Arial", 12), width=15,height=2, command=lambda: abrir_ventana_conversion(categoria) ).pack(pady=5)
+
+crear_boton("Longitud", "Longitud")
+crear_boton("Masa", "Masa")
+crear_boton("Tiempo", "Tiempo")
+
+ventana_principal.mainloop()
